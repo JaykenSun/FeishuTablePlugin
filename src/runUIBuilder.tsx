@@ -1,25 +1,49 @@
-import { bitable, UIBuilder } from "@lark-base-open/js-sdk";
+import { IDateTimeField, IFormulaField, IOpenTimestamp, ITable, UIBuilder } from "@lark-base-open/js-sdk";
 import { UseTranslationResponse } from 'react-i18next';
+import { string2Date } from "./utils";
 
 export default async function(uiBuilder: UIBuilder, { t }: UseTranslationResponse<'translation', undefined>) {
   uiBuilder.markdown(`
-  > 欢迎使用 UIBuilder，你可以在 \`uiBuilder.markdown\` 或者 \`uiBuilder.text\` 中输出交互内容  
-  > 功能演示&反馈请查阅 👉 [使用指南](https://feishu.feishu.cn/docx/OHxZdBQrVo5uudx1moIcL5jcn3c)
+  #### 公式日期转日期
+  > 欢迎使用日期转换器，选择利用公式生成日期的属性转换为日期类型的属性列
   `);
   uiBuilder.form((form) => ({
     formItems: [
       form.tableSelect('table', { label: '选择数据表' }),
-      form.viewSelect('view', { label: '选择视图', sourceTable: 'table' }),
-      form.fieldSelect('field', { label: '选择字段', sourceTable: 'table', multiple: true }),
-      form.input('text', { label: '输入文本', defaultValue: '文本默认值' }),
-      form.inputNumber('number', { label: '输入数字', defaultValue: 28 }),
-      form.textArea('textArea', { label: '输入多行文本' }),
-      form.checkboxGroup('checkbox', { label: '选择水果', options: ['Apple', 'Orange'], defaultValue: ['Apple'] }),
-      form.select('select', { label: '下拉选择器', options: [{ label: 'Apple', value: 'Apple' }, { label: 'Orange', value: 'Orange' }], defaultValue: 'Apple' }),
+      form.fieldSelect('sourceField', { label: '源属性', sourceTable: 'table'}),
+      form.fieldSelect('targetField', { label: '目标属性', sourceTable: 'table'}),
     ],
     buttons: ['确定', '取消'],
   }), async ({ key, values }) => {
-    const { table, view, field, text, number, textArea, checkbox, select } = values;
-    uiBuilder.markdown(`你点击了**${key}**按钮`);
+    if (key === '取消') {
+      return; // 点击取消按钮不处理任何业务
+    }
+
+    const table = values.table as ITable;
+    const sourceField = values.sourceField as IFormulaField;
+    const targetField = values.targetField as IDateTimeField;
+
+    uiBuilder.showLoading('获取文本数据');
+    const fvs = await sourceField.getFieldValueList();
+    
+    uiBuilder.showLoading('写入结果');
+
+    const promises: any[] = [];
+    fvs.forEach(v => {
+      const key = v.record_id as string;
+      const value = string2Date(v.value as string);
+
+      promises.push(
+        table.setCellValue(
+          targetField.id,
+          key,
+          value as IOpenTimestamp,
+        ),
+      );
+    });
+    await Promise.all(promises);
+
+    uiBuilder.hideLoading();
+    uiBuilder.message.success('转换完成');
   });
 }

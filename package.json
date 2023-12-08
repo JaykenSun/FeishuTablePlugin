@@ -1,5 +1,5 @@
 {
-  "name": "React Template",
+  "name": "FeishuTablePlugin",
   "version": "1.0.0",
   "type": "module",
   "description": "React TypeScript on Replit, using Vite bundler",
@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "keywords": [],
-  "author": "",
+  "author": "jayken",
   "license": "ISC",
   "devDependencies": {
     "@types/react": "^18.0.15",
